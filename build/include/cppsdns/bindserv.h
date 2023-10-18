@@ -9,6 +9,6 @@
 namespace bindserv
 {
     int bind_socket(int port = DEFAULT_BIND_PORT);
-    std::vector<char> recv();
-    void sendback(char *buffer, size_t __n);
+    std::vector<char> recv(int *clientaddr_id);
+    void sendback(int clientaddr_id, char *buffer, size_t __n);
 }

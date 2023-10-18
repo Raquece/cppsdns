@@ -7,4 +7,4 @@ NOTE: This project is for learning purposes, and not to be used in a realistic e
 - [x] A Records
 - [ ] Functionality for other records
 - [ ] Ensure RFC 1035 compliance
-- [ ] Parallelism
+- [x] Concurrency
