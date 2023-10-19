@@ -29,6 +29,7 @@ std::vector<std::tuple<std::string, std::string, std::string>> readRecords()
         std::string a;
         std::string b;
         std::string c;
+
         if (!(iss >> a >> b >> c))
         { 
             std::cerr << "Failure to process records line " << nline << "\n";
@@ -131,8 +132,6 @@ int main()
     {
         int cliid;
         auto packet = bindserv::recv(&cliid);
-
-        std::cout << "new packet at cliaddr " << cliid << std::endl;
 
         process_packet(cliid, records, packet);
         threads.push_back(std::thread(process_packet, cliid, records, packet));

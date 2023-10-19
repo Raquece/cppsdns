@@ -14,8 +14,9 @@
 namespace bindserv
 {
     int sockfd;
-    struct sockaddr_in servaddr, cliaddr;
-    std::vector<sockaddr_in> clients;
+    struct sockaddr_in servaddr;
+    std::vector<std::shared_ptr<struct sockaddr_in>> clients;
+    std::stack<int> removed_clients;
 
     /// @brief Binds the server to a socket
     /// @param port The port to bind to
@@ -42,7 +43,7 @@ namespace bindserv
             exit(1);
         }
 
-        clients = std::vector<sockaddr_in>();
+        clients = std::vector<std::shared_ptr<sockaddr_in>>();
 
         return 0;
     }
@@ -54,14 +55,26 @@ namespace bindserv
     {
         // Initialise receiving buffer
         char buffer[250];
-        memset(&cliaddr, 0, sizeof(cliaddr));
 
-        clients.push_back(cliaddr);
-        *clientaddr_id = clients.size() - 1;
+        struct sockaddr_in *cliaddr = (struct sockaddr_in *)malloc(sizeof(struct sockaddr_in));
+
+        memset(cliaddr, 0, sizeof(cliaddr));
 
         // Receive payload from socket
         socklen_t len = sizeof(cliaddr);
-        int n = recvfrom(sockfd, (char *)buffer, 1024, MSG_WAITALL, (struct sockaddr *) &cliaddr, &len);
+        int n = recvfrom(sockfd, (char *)buffer, 1024, MSG_WAITALL, (struct sockaddr *) cliaddr, &len);
+
+        if (removed_clients.empty())
+        {
+            clients.push_back(std::shared_ptr<sockaddr_in>(cliaddr));
+            *clientaddr_id = clients.size() - 1;
+        }
+        else
+        {
+            int id = removed_clients.top();
+            removed_clients.pop();
+            clients[id] = std::shared_ptr<sockaddr_in>(cliaddr);
+        }
 
         // Return payload as a vector
         return std::vector<char>(std::begin(buffer), std::end(buffer));
@@ -73,8 +86,8 @@ namespace bindserv
     /// @param __n The length of the payload
     void sendback(int clientaddr_id, char *buffer, size_t __n)
     {
-        socklen_t len = sizeof(cliaddr);
-        sendto(sockfd, buffer, __n, MSG_CONFIRM, (const struct sockaddr *) &clients[clientaddr_id], len);
-        clients.erase(clients.begin()+clientaddr_id);
+        socklen_t len = sizeof(struct sockaddr_in);
+        sendto(sockfd, buffer, __n, MSG_CONFIRM, (const struct sockaddr *) clients[clientaddr_id].get(), len);
+        removed_clients.push(clientaddr_id);
     }
 }
